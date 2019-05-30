@@ -1,44 +1,7 @@
 from mongo import Mongo
 import Algorithmia
+
 client = Algorithmia.client('sim4F6YzBeA50zxpy6Ef0vYhcPs1')
-
-# input = "Oi, tudo bem?"
-# client = Algorithmia.client('sim4F6YzBeA50zxpy6Ef0vYhcPs1')
-# algo = client.algo('SummarAI/Summarizer/0.1.3')
-# algo.set_options(timeout=300) # optional
-# print(algo.pipe(input).result)
-
-# client = Algorithmia.client('sim4F6YzBeA50zxpy6Ef0vYhcPs1')
-# algo = client.algo('translation/GoogleTranslate/0.1.1')
-# input = {
-#   "files": [
-#     [
-#       "doc1",
-#       algo.pipe({
-#   "action": "translate",
-#   "text": "Oi, como vai?"
-#       }).result["translation"]
-#     ],
-#     [
-#       "doc2",
-#       algo.pipe({
-#   "action": "translate",
-#   "text": "Ola, vocẽ está bem ?"
-#       }).result["translation"]
-#     ],
-#     [
-#       "doc3",
-#       algo.pipe({
-#   "action": "translate",
-#   "text": "não quero mais respostas!"
-#       }).result["translation"]
-#     ]
-#   ]
-# }
-# print(input)
-# algo = client.algo('PetiteProgrammer/TextSimilarity/1.0.0')
-# algo.set_options(timeout=300) # optional
-# print(algo.pipe(input).result)
 
 class Conversations:
     mongo = None
@@ -51,7 +14,7 @@ class Conversations:
     def __init__(self):
         self.mongo = Mongo().init()
 
-    def newAnswer(self, answer):
+    def newAnswer(self, answer, trees):
         translation = self.translateAnswer(answer)
         tags = self.getTags(translation)
 
@@ -74,11 +37,11 @@ class Conversations:
                         bestReply = reply
                     
             if check:
-                return bestReply["reply"]
+                return tags, bestReply["reply"]
             else:
-                return self.registerDbAndReturnNotReply(answer, translation, tags)
+                return [], self.registerDbAndReturnNotReply(answer, translation, tags)
         else:
-            return self.registerDbAndReturnNotReply(answer, translation, tags)
+            return [], self.registerDbAndReturnNotReply(answer, translation, tags)
 
     def translateAnswer(self, answer, textLanguageFrom="pt"):
         algo = client.algo('translation/YandexTranslate/0.1.2')

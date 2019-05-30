@@ -15,7 +15,7 @@ class InterativeChat:
     def reply(self, message):
         print(self.clerk+": "+message)
 
-    def waitAnswer(self):
+    def waitAnswer(self, trees):
         answer = input("You: ")
-        reply = self.conversation.newAnswer(answer)
+        reply = self.conversation.newAnswer(answer, trees)
         return reply
