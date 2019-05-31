@@ -1,5 +1,6 @@
 from mongo import Mongo
 import Algorithmia
+from twitter import Twitter
 
 client = Algorithmia.client('sim4F6YzBeA50zxpy6Ef0vYhcPs1')
 
@@ -43,10 +44,10 @@ class Conversations:
         else:
             return [], self.registerDbAndReturnNotReply(answer, translation, tags)
 
-    def translateAnswer(self, answer, textLanguageFrom="pt"):
+    def translateAnswer(self, answer, textLanguageFrom="pt", textLanguageTo="en"):
         algo = client.algo('translation/YandexTranslate/0.1.2')
         return algo.pipe({
-            "to":"en",
+            "to": textLanguageTo,
             "from": textLanguageFrom,
             "text": answer
             }).result[0]
@@ -64,10 +65,31 @@ class Conversations:
         return find
 
     def registerDbAndReturnNotReply(self, answer, translation, tags):
+        tagsBR = []
+        for tag in tags:
+            print(tag)
+            tagsBR.append(self.translateAnswer(tag, "en", "pt"))
+        
+        twitterResponses = Twitter(tagsBR).getByKeywords()
+        bestTweet = { "score": 0 }
+        for tweet in twitterResponses:
+            score = (10 * tweet["retweet_count"]) + tweet["favorite_count"]
+            if bestTweet["score"] < score:
+                bestTweet = tweet
+                bestTweet["score"] = score
+        
+        bestRating = int((bestTweet["score"] / 10000) * 5)
+
+        if bestRating > 5:
+            bestRating = 5
+
+        reply = bestTweet["text"]
+
         _id = self.mongo["dev"]["conversations"].insert_one({
                 "answer": answer,
-                "rating": 0,
+                "reply": reply,
+                "rating": bestRating,
                 "translation": translation,
                 "tags": tags
-            }).inserted_id
-        return "Eu não sei responder essa pergunta"
+            }) # .inserted_id
+        return reply
